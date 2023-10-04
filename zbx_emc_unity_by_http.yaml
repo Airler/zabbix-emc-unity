@@ -1,0 +1,152 @@
+zabbix_export:
+  version: '6.4'
+  template_groups:
+    - uuid: 7c2cb727f85b492d88cd56e17127c64d
+      name: Templates/SAN
+  templates:
+    - uuid: 1cc80774ac994bcea5c093988f9d534f
+      template: 'EMC Unity by HTTP'
+      name: 'EMC Unity by HTTP'
+      vendor:
+        name: Airler
+        version: 6.4-0
+      description: 'https://www.dell.com/support/manuals/en-us/unity-300/unity_p_restapi_prog_guide/uri-patterns?guid=guid-edcee80f-fb74-4741-a4d8-a7581f755085&lang=en-us'
+      groups:
+        - name: Templates/SAN
+      items:
+        - uuid: 0ac3c3914fb04122bc434b4324c0249f
+          name: 'Unity: Basic System Informations'
+          type: HTTP_AGENT
+          key: unity.api.basicsysinfo
+          delay: 10m
+          history: '0'
+          trends: '0'
+          value_type: TEXT
+          authtype: BASIC
+          username: '{$UNITY.USERNAME}'
+          password: '{$UNITY.PASSWORD}'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.entries
+          url: 'https://{HOST.CONN}/api/types/basicSystemInfo/instances'
+          tags:
+            - tag: component
+              value: raw
+        - uuid: 4123875ba9ea488c957952841a216e32
+          name: 'API Version'
+          type: DEPENDENT
+          key: unity.api.basicsysinfo.apiversion
+          delay: '0'
+          trends: '0'
+          value_type: CHAR
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $..content.apiVersion
+            - type: REGEX
+              parameters:
+                - '\[\"(.*)\"\]'
+                - \1
+          master_item:
+            key: unity.api.basicsysinfo
+          tags:
+            - tag: component
+              value: system
+        - uuid: f143c4e922994df38a60e941226dc5e1
+          name: Model
+          type: DEPENDENT
+          key: unity.api.basicsysinfo.model
+          delay: '0'
+          trends: '0'
+          value_type: CHAR
+          inventory_link: MODEL
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $..content.model
+            - type: REGEX
+              parameters:
+                - '\[\"(.*)\"\]'
+                - \1
+          master_item:
+            key: unity.api.basicsysinfo
+          tags:
+            - tag: component
+              value: system
+        - uuid: 2e2e72271fc14a82959da20c2dfa7ccd
+          name: Name
+          type: DEPENDENT
+          key: unity.api.basicsysinfo.name
+          delay: '0'
+          trends: '0'
+          value_type: CHAR
+          inventory_link: NAME
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $..content.name
+            - type: REGEX
+              parameters:
+                - '\[\"(.*)\"\]'
+                - \1
+          master_item:
+            key: unity.api.basicsysinfo
+          tags:
+            - tag: component
+              value: system
+        - uuid: 4f083529120843348aca9dd1cca8cce1
+          name: 'Software Full Version'
+          type: DEPENDENT
+          key: unity.api.basicsysinfo.softwarefullversion
+          delay: '0'
+          trends: '0'
+          value_type: CHAR
+          inventory_link: OS_FULL
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $..content.softwareFullVersion
+            - type: REGEX
+              parameters:
+                - '\[\"(.*)\"\]'
+                - \1
+          master_item:
+            key: unity.api.basicsysinfo
+          tags:
+            - tag: component
+              value: system
+        - uuid: ffae6d17fb2d435185c85e14544229fa
+          name: 'Software Version'
+          type: DEPENDENT
+          key: unity.api.basicsysinfo.softwareversion
+          delay: '0'
+          trends: '0'
+          value_type: CHAR
+          inventory_link: OS_SHORT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $..content.softwareVersion
+            - type: REGEX
+              parameters:
+                - '\[\"(.*)\"\]'
+                - \1
+          master_item:
+            key: unity.api.basicsysinfo
+          tags:
+            - tag: component
+              value: system
+          triggers:
+            - uuid: 2ca9330f7bf1448195edaa624b72d829
+              expression: 'change(/EMC Unity by HTTP/unity.api.basicsysinfo.softwareversion) and length(last(/EMC Unity by HTTP/unity.api.basicsysinfo.softwareversion))>0'
+              name: 'Software Version'
+              tags:
+                - tag: scope
+                  value: notice
+      macros:
+        - macro: '{$UNITY.PASSWORD}'
+          type: SECRET_TEXT
+        - macro: '{$UNITY.USERNAME}'
+          value: zabbix
+          description: 'Use a dedicated read only user for monitoring'
